@@ -32,6 +32,7 @@
  */
 package thredds.server.ncss.controller;
 
+import org.jdom2.JDOMException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
@@ -40,6 +41,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import thredds.server.config.FormatsAvailabilityService;
 import thredds.server.config.TdsContext;
 import thredds.server.ncss.dataservice.FeatureDatasetService;
+import thredds.server.ncss.dataservice.NcssShowFeatureDatasetInfo;
 import thredds.server.ncss.exception.NcssException;
 import thredds.server.ncss.exception.UnsupportedOperationException;
 import thredds.server.ncss.exception.UnsupportedResponseFormatException;
@@ -62,8 +64,10 @@ import ucar.nc2.util.IO;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import javax.xml.transform.TransformerException;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.Formatter;
 import java.util.Set;
@@ -84,6 +88,9 @@ public class NcssController extends AbstractNcssController {
 
   @Autowired
   TdsContext tdsContext;
+
+  @Autowired
+  private NcssShowFeatureDatasetInfo ncssShowDatasetInfo;
 
   /* @RequestMapping("/ncss/grid/**")
   public String forwardGrid(HttpServletRequest req) {
@@ -186,16 +193,47 @@ public class NcssController extends AbstractNcssController {
       filename += suffix;
     }
 
-    // Headers...
-    HttpHeaders httpHeaders = new HttpHeaders();
-    httpHeaders.set(ContentType.HEADER, sf.getResponseContentType());
-    httpHeaders.set(Constants.Content_Disposition, Constants.setContentDispositionValue(filename));
-    setResponseHeaders(res, httpHeaders);
+    if (params.getResponse_file() == true) {
+      // Headers...
+      HttpHeaders httpHeaders = new HttpHeaders();
+      httpHeaders.set(ContentType.HEADER, sf.getResponseContentType());
+      httpHeaders.set(Constants.Content_Disposition, Constants.setContentDispositionValue(filename));
+      setResponseHeaders(res, httpHeaders);
 
-    IO.copyFileB(netcdfResult, res.getOutputStream(), 60000);
-    res.flushBuffer();
-    res.getOutputStream().close();
-    res.setStatus(HttpServletResponse.SC_OK);
+      IO.copyFileB(netcdfResult, res.getOutputStream(), 60000);
+      res.flushBuffer();
+      res.getOutputStream().close();
+      res.setStatus(HttpServletResponse.SC_OK);
+    }
+    else {
+      String subsetPath = netcdfResult.getAbsolutePath();
+      int index = subsetPath.indexOf("cache");
+      subsetPath = subsetPath.substring(index);
+      //req.getAttribute("strippedServletPath");
+      //req.setAttribute("strippedServletPath", );
+      //CoverageCollection gcdSubset = TdsRequestedDataset.getCoverageCollection( req, res, subsetPath);
+      try (FeatureDataset fdSubset = datasetService.findDatasetByPath(null, res, subsetPath)) {
+        if (fdSubset == null)
+          return; // restricted dataset
+
+        String strResponse = ncssShowDatasetInfo.showForm(fdSubset, subsetPath,true, false);
+        res.setContentType(ContentType.xml.getContentHeader());
+        thredds.servlet.ServletUtil.setResponseContentLength(res, strResponse);
+        writeResponse(strResponse, res);
+      } catch (JDOMException e) {
+        e.printStackTrace();
+      } catch (TransformerException e) {
+        e.printStackTrace();
+      }
+
+      //ModelAndView modelAndView = new ModelAndView();
+      //try (CoverageCollection gcdSubset = TdsRequestedDataset.getCoverageCollection(req, res, subsetPath)) {
+      //  if (gcdSubset != null) { // restricted dataset
+      //    modelAndView = ncssShowDatasetInfo.showGridFormTh(gcdSubset, buildDatasetUrl(subsetPath), true);
+      //  }
+      //}
+      //return modelAndView;
+    }
   }
 
   void handleRequestGridAsPoint(HttpServletResponse res, NcssParamsBean params, String datasetPath,
@@ -327,6 +365,15 @@ public class NcssController extends AbstractNcssController {
     }
 
   }  */
+  /**
+   * Writes out the responseStr to the response object
+   */
+  private void writeResponse(String responseStr, HttpServletResponse response) throws IOException {
+    PrintWriter pw = response.getWriter();
+    pw.write(responseStr);
+    pw.flush();
+    response.flushBuffer();
+  }
 
   private void setResponseHeaders(HttpServletResponse response, HttpHeaders httpHeaders) {
     Set<String> keySet = httpHeaders.keySet();

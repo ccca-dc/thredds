@@ -127,6 +127,8 @@ public class NcssParamsBean {
 
  	private Integer vertStride=1;
 
+  private boolean response_file = true;
+
   //// station only
 	private List<String> stns;
 
@@ -343,6 +345,10 @@ public class NcssParamsBean {
   public boolean isAllTimes() {
     return temporal != null && temporal.equalsIgnoreCase("all");
   }
+
+  public boolean getResponse_file() { return response_file; }
+
+  public void setResponse_file(boolean response_file) { this.response_file = response_file; }
 
   public TimeDuration parseTimeDuration() throws NcssException {
     if (getTime_duration() == null) return null;
