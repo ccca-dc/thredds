@@ -746,7 +746,7 @@ public class CFGridWriter {
 
     writer.addGroupAttribute(null, new Attribute("History",
             "Translated to CF-1.0 Conventions by Netcdf-Java CDM (CFGridWriter)\n" +
-                    "Original Dataset = " + gds.getLocationURI() + "; Translation Date = " + CalendarDate.present()));
+                    "Original Dataset = " + gds.getLocationURI())); // + "; Translation Date = " + CalendarDate.present()));
 
     // this will replace any existing
     writer.addGroupAttribute(null, new Attribute(ACDD.LAT_MIN, llbb.getLatMin()));
