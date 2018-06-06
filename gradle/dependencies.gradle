@@ -18,8 +18,18 @@ allprojects {  // Doesn't apply any plugins: safe to run closure on all projects
             url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-3rdparty/"
         }
         maven {
+            url "https://artifacts.unidata.ucar.edu/repository/unidata-releases"  // For 'com.cwardgar.gretty:gretty-fork'.
+        }
+        maven {
             url "https://dl.bintray.com/cwardgar/maven/"  // For 'com.cwardgar.gretty:gretty-fork'.
         }
+        maven {
+            url "http://52north.org/maven/repo/releases/"  // For 'com.cwardgar.gretty:gretty-fork'.
+        }
+        maven {
+            url "http://maven.geotoolkit.org/"  // For 'com.cwardgar.gretty:gretty-fork'.
+        }
+
     }
 }
 
